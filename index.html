@@ -1,386 +1,1204 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<title>Helena Nail's Designer</title>
-<style>
-  body, html { margin:0; padding:0; font:16px "Lato", sans-serif; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento - Helena Nail's Designer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-  /* Layout */
-  body { display:flex; min-height:100vh; }
+        body {
+            background: linear-gradient(135deg, #ffb6c1, #ff8fab);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
 
-  /* Menu lateral */
-  aside {
-    position: fixed; top:0; left:0;
-    width:250px; height:100%; background:#ffb6c1;
-    padding:20px; box-sizing:border-box; overflow-y:auto;
-    color:#333; border-right:2px solid #f08080;
-    z-index:1000; transform:translateX(-100%);
-    transition:transform 0.3s ease;
-  }
-  aside.active { transform:translateX(0); }
-  aside h3 {
-    margin-top:0; font-size:22px; color:#8b0000;
-    text-align:center; cursor:pointer;
-  }
-  aside ul { list-style:none; padding:0; }
-  aside ul li {
-    margin:12px 0; padding:8px;
-    background:#ffe4e9; border-radius:8px; text-align:center;
-    font-weight:bold; cursor:pointer;
-    opacity:0; transform:translateX(-20px);
-    transition: transform 0.3s ease, opacity 0.3s ease;
-  }
-  aside.active ul li { opacity:1; transform:translateX(0); }
-  aside.active ul li:nth-child(1){transition-delay:0.1s;}
-  aside.active ul li:nth-child(2){transition-delay:0.2s;}
-  aside.active ul li:nth-child(3){transition-delay:0.3s;}
-  aside.active ul li:nth-child(4){transition-delay:0.4s;}
-  aside.active ul li:nth-child(5){transition-delay:0.5s;}
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
 
-  .menu-toggle {
-    position:fixed; top:15px; left:15px;
-    background:#f08080; color:white;
-    border:none; font-size:26px; padding:8px 12px;
-    border-radius:6px; cursor:pointer; z-index:1100;
-  }
-  .overlay {
-    position:fixed; top:0; left:0; right:0; bottom:0;
-    background: rgba(0,0,0,0.5); z-index:900; display:none;
-  }
-  .overlay.active { display:block; }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
 
-  main { flex:1; margin-left:0; transition: margin-left 0.3s ease; }
-  main.shifted { margin-left:250px; }
+        .logo {
+            font-size: 24px;
+            color: #d63384;
+            margin-bottom: 10px;
+        }
 
-  /* Parallax */
-  .parallax {
-    position: relative;
-    background-attachment: fixed; background-position:center;
-    background-repeat:no-repeat; background-size:cover;
-    min-height:100vh; display:flex; justify-content:center; align-items:center;
-    color:white; font-size:36px; text-shadow:2px 2px 4px #000; z-index:1;
-  }
-  .parallax::before {
-    content:""; position:absolute; top:0; left:0; right:0; bottom:0;
-    background: rgba(255,182,193,0.3); z-index:0;
-  }
-  .parallax > * { position:relative; z-index:2; }
-  #home { background-image:url('imagens/anuncio1.jpg'); }
-  #galeria { background-image:url('imagens/fundobranco.jpg'); }
-  #agendamento { background-image:url('imagens/fundobranco.jpg'); }
+        h1 {
+            color: #8b0000;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
 
-  /* Carrossel de fotos */
-  .carousel { position:relative; width:100%; max-width:800px; margin:auto; overflow:hidden; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.3); }
-  .carousel img {
-    width:100%; position:absolute; top:0; left:0;
-    opacity:0; transition:opacity 0.5s ease-in-out;
-  }
-  .carousel img.active { opacity:1; position:relative; }
-  .carousel button {
-    position:absolute; top:50%; transform:translateY(-50%);
-    background:rgba(0,0,0,0.5); color:white;
-    border:none; padding:10px; cursor:pointer; font-size:24px; border-radius:6px;
-  }
-  .carousel .prev { left:10px; }
-  .carousel .next { right:10px; }
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
 
-  /* Formulário de agendamento */
-  #form-agenda {
-    background: rgba(255,255,255,0.9); padding:20px; border-radius:10px;
-    max-width:400px; width:90%; box-shadow:0 4px 8px rgba(0,0,0,0.1);
-  }
-  #form-agenda input, #form-agenda select, #form-agenda textarea {
-    width:100%; padding:10px; margin-bottom:12px; border:1px solid #f08080;
-    border-radius:6px; font-size:15px; box-sizing:border-box;
-  }
-  #form-agenda button {
-    background:#25d366; color:white; font-weight:bold; border:none;
-    padding:12px 18px; border-radius:8px; cursor:pointer; transition:0.3s; width:100%;
-  }
-  #form-agenda button:hover { background:#1ebe57; transform:scale(1.05); }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
 
-  /* Feedback em carrossel */
-  .feedback-carousel {
-    position: relative; max-width: 600px; margin: 20px auto;
-    overflow: hidden; border-radius: 8px; background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 20px; min-height:100px;
-  }
-  .feedback-item {
-    opacity:0; transition:opacity 0.6s ease-in-out;
-    position:absolute; top:0; left:0; width:100%; text-align:center; padding:20px;
-    word-wrap: break-word; max-height:200px; overflow-y:auto;
-  }
-  .feedback-item.active { opacity:1; position:relative; }
-  .feedback-carousel button {
-    position:absolute; top:50%; transform:translateY(-50%);
-    background: rgba(0,0,0,0.5); color:white; border:none;
-    padding:8px 12px; cursor:pointer; font-size:20px; border-radius:6px; z-index:10;
-  }
-  .feedback-carousel .prev-feedback { left:10px; }
-  .feedback-carousel .next-feedback { right:10px; }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
 
-  .feedback-indicators { text-align:center; margin-top:15px; }
-  .feedback-indicators span {
-    display:inline-block; width:10px; height:10px; margin:0 4px;
-    background:#ccc; border-radius:50%; cursor:pointer; transition:background 0.3s;
-  }
-  .feedback-indicators span.active { background:#f08080; }
-  #feedback-form {
-  background: rgba(255, 182, 193, 0.9); /* rosa claro translúcido */
-  padding: 20px;
-  border-radius: 12px;
-  max-width: 500px;
-  margin: 20px auto;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
 
-#feedback-form input,
-#feedback-form textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #f08080;
-  border-radius: 8px;
-  font-size: 16px;
-  box-sizing: border-box;
-  transition: border-color 0.3s;
-}
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
 
-#feedback-form input:focus,
-#feedback-form textarea:focus {
-  border-color: #ff69b4;
-  outline: none;
-}
+        input, select, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
 
-#feedback-form button {
-  background: #f08080;
-  color: white;
-  font-weight: bold;
-  border: none;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s;
-}
+        input:focus, select:focus, textarea:focus {
+            border-color: #ff8fab;
+            outline: none;
+            background: white;
+        }
 
-#feedback-form button:hover {
-  background: #ff4d85;
-  transform: scale(1.05);
-}
+        input.error, select.error, textarea.error {
+            border-color: #e74c3c;
+        }
 
-/* Título da seção de feedback */
-.feedback-section h2 {
-  text-align: center;
-  color: #8b0000;
-  margin-bottom: 15px;
-}
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
 
-/* Responsividade */
-@media(max-width: 768px){
-  #feedback-form { padding: 15px; }
-}
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: #25d366;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            margin-top: 10px;
+        }
 
-  footer { background:#f08080; color:white; text-align:center; padding:20px; }
+        .btn:hover {
+            background: #1ebe57;
+            transform: translateY(-2px);
+        }
 
-  .footer-icon {
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: color 0.3s;
-}
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-.footer-icon i {
-  font-size: 20px;
-}
+        .calendar-container {
+            margin-bottom: 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
 
-.footer-icon:hover {
-  color: #ff69b4; /* muda a cor ao passar o mouse */
-}
+        .calendar-container.expanded {
+            max-height: 500px;
+        }
 
-  /* Responsividade */
-  @media(max-width:768px){
-    aside { width:200px; }
-    main.shifted { margin-left:200px; }
-    .parallax { background-attachment: scroll; font-size:28px; }
-  }
-</style>
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-day {
+            text-align: center;
+            padding: 10px 5px;
+            font-weight: bold;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .calendar-date {
+            text-align: center;
+            padding: 12px 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .calendar-date:hover {
+            background: #f0f0f0;
+        }
+
+        .calendar-date.selected {
+            background: #ff8fab;
+            color: white;
+        }
+
+        .calendar-date.disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .calendar-date.today {
+            background: #e0e0e0;
+        }
+
+        .calendar-date.occupied {
+            background: #ffcccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .time-slot {
+            padding: 12px;
+            text-align: center;
+            background: #f0f0f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .time-slot:hover {
+            background: #e0e0e0;
+        }
+
+        .time-slot.selected {
+            background: #ff8fab;
+            color: white;
+        }
+
+        .time-slot.disabled {
+            background: #f8f8f8;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .time-slot.occupied {
+            background: #ffcccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .whatsapp-preview {
+            background: #f0f8f0;
+            border: 1px solid #25d366;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .whatsapp-preview h4 {
+            color: #25d366;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Carrossel de Imagens */
+        .carousel-section {
+            margin-bottom: 30px;
+        }
+
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f8f8;
+        }
+
+        .carousel-slide.active {
+            opacity: 1;
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .carousel-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.7);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .carousel-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .carousel-prev {
+            left: 15px;
+        }
+
+        .carousel-next {
+            right: 15px;
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .carousel-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .carousel-indicator.active {
+            background: white;
+            transform: scale(1.2);
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .date-selector:hover {
+            background: #f0f0f0;
+        }
+
+        .date-selector i {
+            font-size: 20px;
+            color: #ff8fab;
+        }
+
+        .date-display {
+            flex: 1;
+        }
+
+        .date-placeholder {
+            color: #888;
+        }
+
+        .date-selected {
+            color: #333;
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .time-slots {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .calendar-date {
+                padding: 10px 3px;
+                font-size: 14px;
+            }
+
+            .carousel-container {
+                height: 250px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-spa"></i> Helena Nail's Designer
+            </div>
+            <h1>Agendamento Online</h1>
+            <p class="subtitle">Agende seu horário de forma rápida e fácil</p>
+        </header>
 
-<button class="menu-toggle">☰</button>
-<div class="overlay"></div>
+        <!-- Carrossel de Imagens -->
+        <section class="carousel-section">
+            <div class="carousel-container">
+                <div class="carousel-slide active">
+                    <img src="imagens/cliente4.jpg" alt="Unhas decoradas">
+                    <div class="carousel-caption">
+                        <h3>Unhas em Gel</h3>
+                        <p>Durabilidade e brilho incríveis</p>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="imagens/cliente5.jpg" alt="Design de unhas">
+                    <div class="carousel-caption">
+                        <h3>Alongamento</h3>
+                        <p>Unhas perfeitas e naturais</p>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="imagens/cliente6.jpg" alt="Manicure">
+                    <div class="carousel-caption">
+                        <h3>Manicure & Pedicure</h3>
+                        <p>Cuidados completos para suas mãos e pés</p>
+                    </div>
+                </div>
+                <button class="carousel-btn carousel-prev">&#10094;</button>
+                <button class="carousel-btn carousel-next">&#10095;</button>
+                <div class="carousel-indicators">
+                    <span class="carousel-indicator active"></span>
+                    <span class="carousel-indicator"></span>
+                    <span class="carousel-indicator"></span>
+                </div>
+            </div>
+        </section>
 
-<aside>
-  <h3>💅 Serviços</h3>
-  <ul>
-    <li>Manicure & Pedicure</li>
-    <li>Unhas em Gel</li>
-    <li>Alongamento de Unhas</li>
-    <li>Esmaltação Tradicional</li>
-    <li>Design de Sobrancelhas</li>
-  </ul>
-</aside>
+        <!-- Formulário de Agendamento -->
+        <div class="card">
+            <form id="agendamento-form">
+                <div class="form-group">
+                    <label for="nome" class="required"><i class="fas fa-user"></i> Nome Completo</label>
+                    <input type="text" id="nome" placeholder="Seu nome completo" required>
+                    <div class="error-message" id="nome-error">Por favor, informe seu nome completo</div>
+                </div>
 
-<main>
-  <!-- Home -->
-  <section id="home" class="parallax"></section>
+                <div class="form-group">
+                    <label for="telefone" class="required"><i class="fas fa-phone"></i> Telefone/WhatsApp</label>
+                    <input type="tel" id="telefone" placeholder="(00) 00000-0000" required>
+                    <div class="error-message" id="telefone-error">Por favor, informe um telefone válido</div>
+                </div>
 
-  <!-- Galeria de fotos -->
-  <section id="galeria" class="parallax">
-    <div class="carousel">
-      <img src="imagens/cliente1.jpg" class="active" alt="Unhas 1">
-      <img src="imagens/cliente2.jpg" alt="Unhas 2">
-      <img src="imagens/cliente3.jpg" alt="Unhas 3">
-          <img src="imagens/cliente4.jpg" class="active" alt="Unhas 4">
-      <img src="imagens/cliente5.jpg" alt="Unhas 4">
-      <img src="imagens/cliente6.jpg" alt="Unhas 6">
-      <button class="prev">&#10094;</button>
-      <button class="next">&#10095;</button>
+                <div class="form-group">
+                    <label for="servico" class="required"><i class="fas fa-concierge-bell"></i> Serviço Desejado</label>
+                    <select id="servico" required>
+                        <option value="">Selecione um serviço</option>
+                        <option value="Manicure e Pedicure">Manicure e Pedicure</option>
+                        <option value="Unhas em gel">Unhas em gel</option>
+                        <option value="Alongamento de unhas">Alongamento de unhas</option>
+                        <option value="Esmaltação Tradicional">Esmaltação Tradicional</option>
+                        <option value="Design de Sobrancelhas">Design de Sobrancelhas</option>
+                        <option value="Podologia">Podologia</option>
+                    </select>
+                    <div class="error-message" id="servico-error">Por favor, selecione um serviço</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required"><i class="far fa-calendar-alt"></i> Data do Agendamento</label>
+                    <div class="date-selector" id="date-selector">
+                        <i class="far fa-calendar"></i>
+                        <div class="date-display">
+                            <span class="date-placeholder" id="date-placeholder">Selecione uma data</span>
+                            <span class="date-selected" id="date-selected" style="display: none;"></span>
+                        </div>
+                        <i class="fas fa-chevron-down" id="calendar-toggle"></i>
+                    </div>
+                    <div class="error-message" id="date-error">Por favor, selecione uma data</div>
+                    
+                    <div class="calendar-container" id="calendar-container">
+                        <div class="calendar-header">
+                            <button type="button" id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="current-month">Junho 2023</h3>
+                            <button type="button" id="next-month"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-grid" id="calendar-days">
+                            <!-- Dias da semana -->
+                            <div class="calendar-day">Dom</div>
+                            <div class="calendar-day">Seg</div>
+                            <div class="calendar-day">Ter</div>
+                            <div class="calendar-day">Qua</div>
+                            <div class="calendar-day">Qui</div>
+                            <div class="calendar-day">Sex</div>
+                            <div class="calendar-day">Sáb</div>
+                            <!-- Datas serão inseridas via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required"><i class="far fa-clock"></i> Horário Disponível</label>
+                    <div class="time-slots" id="time-slots">
+                        <!-- Horários serão inseridos via JavaScript -->
+                    </div>
+                    <div class="error-message" id="time-error">Por favor, selecione um horário</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="observacoes"><i class="far fa-comment-dots"></i> Observações (Opcional)</label>
+                    <textarea id="observacoes" rows="3" placeholder="Alguma observação especial..."></textarea>
+                </div>
+
+                <!-- Preview da mensagem do WhatsApp -->
+                <div class="whatsapp-preview" id="whatsapp-preview" style="display: none;">
+                    <h4><i class="fab fa-whatsapp"></i> Mensagem que será enviada:</h4>
+                    <div id="preview-content"></div>
+                </div>
+
+                <button type="submit" class="btn" id="submit-btn">
+                    <i class="fab fa-whatsapp"></i> Confirmar Agendamento no WhatsApp
+                </button>
+            </form>
+        </div>
+
+        <footer>
+            <p>📍 Ed.João Zannata, 859. Centro – Passo Fundo, RS</p>
+            <p>📞 (54) 997010289</p>
+            <p>
+                <a href="https://www.instagram.com/helenanails9?igsh=MXduc2FmMjhxMTNyeg==" target="_blank" style="color: #d63384; text-decoration: none;">
+                    <i class="fab fa-instagram"></i> @helenanails9
+                </a>
+            </p>
+            <p>&copy; 2025 Helena Nail's Designer - Todos os Direitos Reservados</p>
+        </footer>
     </div>
-  </section>
 
-  <!-- Agendamento -->
-  <section id="agendamento" class="parallax">
-    <form id="form-agenda">
-      <input type="text" id="nome" placeholder="Seu nome" required>
-      <input type="tel" id="telefone" placeholder="Telefone/WhatsApp" required>
-      <select id="servico" required>
-        <option value="">Selecione um serviço</option>
-        <option>Manicure e Pedicure</option>
-        <option>Unhas em gel</option>
-        <option>Alongamento de unhas</option>
-        <option>Esmaltação Tradicional</option>
-        <option>Podóloga</option>
-      </select>
-      <input type="date" id="data" required>
-      <textarea id="mensagem" placeholder="Mensagem (opcional)"></textarea>
-      <button type="submit">📲 Agendar pelo WhatsApp</button>
-    </form>
-  </section>
-
-  <!-- Feedback -->
-  <section class="feedback-section">
-    <h2>O que dizem nossas clientes</h2>
-    <div class="feedback-carousel">
-      <button class="prev-feedback">&#10094;</button>
-      <button class="next-feedback">&#10095;</button>
-      <div class="feedback-indicators"></div>
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">Agendamento realizado com sucesso!</span>
     </div>
-   <form id="feedback-form">
-    <input type="text" id="cliente-nome" placeholder="Seu nome" required>
-    <textarea id="cliente-feedback" placeholder="Deixe seu comentário" required rows="4"></textarea>
-    <button type="submit">Enviar Feedback</button>
-  </form>
-</section>
-  </section>
 
-  <footer>
-    <p>📍 Ed.João Zannata, 859. Centro – Passo Fundo, RS</p>
-    <p>📞 (54) 997010289</p>
-      <p>
-    <a href="https://www.instagram.com/helenanails9?igsh=MXduc2FmMjhxMTNyeg==" target="_blank" class="footer-icon">
-      <i class="fab fa-instagram"></i> Instagram
-    </a>
-  </p>
-    <p>&copy; 2025 Helena Nail's Designer - Todos os Direitos Reservados</p>
-  </footer>
-</main>
+    <script>
+        // 🔧 CONFIGURAÇÃO DO SUPABASE - SUBSTITUA COM SUAS CREDENCIAIS
+        const supabaseUrl = 'SUA_URL_DO_SUPABASE'; // Ex: https://abc123.supabase.co
+        const supabaseKey = 'SUA_CHAVE_PUBLICA_DO_SUPABASE'; // Chave anôn/public
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-<script>
-  // Menu
-  const menuBtn = document.querySelector(".menu-toggle");
-  const aside = document.querySelector("aside");
-  const overlay = document.querySelector(".overlay");
-  const main = document.querySelector("main");
-  const serviceItems = document.querySelectorAll("aside ul li");
-  function toggleMenu(){ aside.classList.toggle("active"); overlay.classList.toggle("active"); main.classList.toggle("shifted"); }
-  menuBtn.addEventListener("click",toggleMenu);
-  overlay.addEventListener("click",toggleMenu);
-  serviceItems.forEach(item=>item.addEventListener("click",toggleMenu));
-  document.querySelector("aside h3").addEventListener("click",toggleMenu);
+        // Elementos DOM
+        const agendamentoForm = document.getElementById('agendamento-form');
+        const calendarDays = document.getElementById('calendar-days');
+        const timeSlotsContainer = document.getElementById('time-slots');
+        const currentMonthElement = document.getElementById('current-month');
+        const prevMonthButton = document.getElementById('prev-month');
+        const nextMonthButton = document.getElementById('next-month');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        const whatsappPreview = document.getElementById('whatsapp-preview');
+        const previewContent = document.getElementById('preview-content');
+        const dateSelector = document.getElementById('date-selector');
+        const calendarContainer = document.getElementById('calendar-container');
+        const datePlaceholder = document.getElementById('date-placeholder');
+        const dateSelected = document.getElementById('date-selected');
+        const calendarToggle = document.getElementById('calendar-toggle');
+        const submitBtn = document.getElementById('submit-btn');
 
-  // Carrossel de fotos
-  let index = 0;
-  const slides = document.querySelectorAll(".carousel img");
-  const prev = document.querySelector(".carousel .prev");
-  const next = document.querySelector(".carousel .next");
-  function showSlide(i){ slides.forEach(s=>s.classList.remove("active")); slides[i].classList.add("active"); }
-  function nextSlide(){ index=(index+1)%slides.length; showSlide(index); }
-  function prevSlideFunc(){ index=(index-1+slides.length)%slides.length; showSlide(index); }
-  next.addEventListener("click",nextSlide);
-  prev.addEventListener("click",prevSlideFunc);
-  setInterval(nextSlide,4000);
+        // Elementos do carrossel
+        const carouselSlides = document.querySelectorAll('.carousel-slide');
+        const carouselPrev = document.querySelector('.carousel-prev');
+        const carouselNext = document.querySelector('.carousel-next');
+        const carouselIndicators = document.querySelectorAll('.carousel-indicator');
 
-  // Agendamento WhatsApp
-  document.getElementById("form-agenda").addEventListener("submit",function(e){
-    e.preventDefault();
-    let nome=document.getElementById("nome").value;
-    let telefone=document.getElementById("telefone").value;
-    let servico=document.getElementById("servico").value;
-    let data=document.getElementById("data").value;
-    let mensagem=document.getElementById("mensagem").value;
-    let texto=`Olá, meu nome é ${nome}.\nTelefone: ${telefone}\nGostaria de agendar: ${servico}\nData desejada: ${data}\nMensagem: ${mensagem}`;
-    let url=`https://wa.me/54997010289?text=${encodeURIComponent(texto)}`;
-    window.open(url,"_blank").focus();
-  });
+        // Estado da aplicação
+        let currentDate = new Date();
+        let selectedDate = null;
+        let selectedTime = null;
+        let currentSlide = 0;
+        let carouselInterval;
+        let agendamentosOcupados = {}; // Cache de horários ocupados
 
-  // Feedback
-  const feedbackCarousel = document.querySelector(".feedback-carousel");
-  const feedbackIndicators = document.querySelector(".feedback-indicators");
-  let feedbacks = JSON.parse(localStorage.getItem("feedbacks") || "[]");
-  let currentFeedback = 0;
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCalendar();
+            setupEventListeners();
+            startCarousel();
+            validateForm();
+        });
 
-  function renderFeedbackCarousel(){
-    feedbackCarousel.querySelectorAll(".feedback-item").forEach(e=>e.remove());
-    feedbackIndicators.innerHTML = "";
-    feedbacks.forEach((f,i)=>{
-      const div = document.createElement("div");
-      div.classList.add("feedback-item");
-      if(i===currentFeedback) div.classList.add("active");
-      div.innerHTML = `<strong>${f.nome}</strong>: ${f.comentario}`;
-      feedbackCarousel.insertBefore(div, feedbackCarousel.querySelector(".prev-feedback"));
-      const span = document.createElement("span");
-      if(i===currentFeedback) span.classList.add("active");
-      span.addEventListener("click",()=>{ currentFeedback=i; updateActiveFeedback(); });
-      feedbackIndicators.appendChild(span);
-    });
-  }
-  renderFeedbackCarousel();
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Navegação do calendário
+            prevMonthButton.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
 
-  function updateActiveFeedback(){
-    const items = document.querySelectorAll(".feedback-item");
-    const indicators = document.querySelectorAll(".feedback-indicators span");
-    items.forEach((item,i)=>item.classList.toggle("active",i===currentFeedback));
-    indicators.forEach((ind,i)=>ind.classList.toggle("active",i===currentFeedback));
-  }
+            nextMonthButton.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
 
-  function showNextFeedback(){ if(feedbacks.length>0){ currentFeedback=(currentFeedback+1)%feedbacks.length; updateActiveFeedback(); } }
-  function showPrevFeedback(){ if(feedbacks.length>0){ currentFeedback=(currentFeedback-1+feedbacks.length)%feedbacks.length; updateActiveFeedback(); } }
+            // Formulário de agendamento
+            agendamentoForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleAppointmentSubmit();
+            });
 
-  document.querySelector(".next-feedback").addEventListener("click",showNextFeedback);
-  document.querySelector(".prev-feedback").addEventListener("click",showPrevFeedback);
-  setInterval(()=>{ showNextFeedback(); },5000);
+            // Validação em tempo real
+            const formInputs = document.querySelectorAll('#agendamento-form input, #agendamento-form select, #agendamento-form textarea');
+            formInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    validateField(input);
+                    updateWhatsAppPreview();
+                    validateForm();
+                });
+                input.addEventListener('change', () => {
+                    validateField(input);
+                    updateWhatsAppPreview();
+                    validateForm();
+                });
+            });
 
-  document.getElementById("feedback-form").addEventListener("submit",e=>{
-    e.preventDefault();
-    const nome=document.getElementById("cliente-nome").value.trim();
-    const comentario=document.getElementById("cliente-feedback").value.trim();
-    if(!nome || !comentario) return alert("Preencha nome e comentário!");
-    feedbacks.push({nome,comentario});
-    localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
-    document.getElementById("feedback-form").reset();
-    currentFeedback=feedbacks.length-1;
-    renderFeedbackCarousel();
-  });
-</script>
+            // Máscara para telefone
+            const telefoneInput = document.getElementById('telefone');
+            telefoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 11) value = value.substring(0, 11);
+                
+                if (value.length > 0) {
+                    if (value.length <= 2) {
+                        value = `(${value}`;
+                    } else if (value.length <= 7) {
+                        value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+                    } else {
+                        value = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+                    }
+                }
+                
+                e.target.value = value;
+                validateField(e.target);
+                updateWhatsAppPreview();
+                validateForm();
+            });
+
+            // Toggle do calendário
+            dateSelector.addEventListener('click', toggleCalendar);
+            calendarToggle.addEventListener('click', toggleCalendar);
+
+            // Event listeners do carrossel
+            carouselPrev.addEventListener('click', showPrevSlide);
+            carouselNext.addEventListener('click', showNextSlide);
+            
+            carouselIndicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', () => {
+                    showSlide(index);
+                });
+            });
+
+            // Pausar carrossel ao interagir
+            const carousel = document.querySelector('.carousel-container');
+            carousel.addEventListener('mouseenter', pauseCarousel);
+            carousel.addEventListener('mouseleave', startCarousel);
+        }
+
+        // 🔧 FUNÇÕES DO SUPABASE
+        async function verificarHorariosOcupados(data) {
+            try {
+                const dataFormatada = data.toISOString().split('T')[0];
+                
+                const { data: agendamentos, error } = await supabase
+                    .from('agendamentos')
+                    .select('hora_agendamento')
+                    .eq('data_agendamento', dataFormatada)
+                    .eq('status', 'confirmado');
+                
+                if (error) throw error;
+                
+                // Armazenar em cache
+                agendamentosOcupados[dataFormatada] = agendamentos.map(a => a.hora_agendamento.substring(0, 5));
+                return agendamentosOcupados[dataFormatada];
+                
+            } catch (error) {
+                console.error('Erro ao verificar horários:', error);
+                return [];
+            }
+        }
+
+        async function criarAgendamento(dados) {
+            try {
+                const { data, error } = await supabase
+                    .from('agendamentos')
+                    .insert([
+                        {
+                            cliente_nome: dados.nome,
+                            cliente_telefone: dados.telefone,
+                            servico: dados.servico,
+                            data_agendamento: dados.data_agendamento,
+                            hora_agendamento: dados.hora_agendamento,
+                            observacoes: dados.observacoes
+                        }
+                    ])
+                    .select();
+                
+                if (error) {
+                    if (error.code === '23505') { // Violação de unique constraint
+                        throw new Error('Este horário já está ocupado. Por favor, escolha outro horário.');
+                    }
+                    throw error;
+                }
+                
+                return data[0];
+                
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // Carrossel de imagens
+        function showSlide(index) {
+            carouselSlides.forEach(slide => slide.classList.remove('active'));
+            carouselIndicators.forEach(indicator => indicator.classList.remove('active'));
+            
+            carouselSlides[index].classList.add('active');
+            carouselIndicators[index].classList.add('active');
+            
+            currentSlide = index;
+        }
+
+        function showNextSlide() {
+            let nextSlide = currentSlide + 1;
+            if (nextSlide >= carouselSlides.length) nextSlide = 0;
+            showSlide(nextSlide);
+        }
+
+        function showPrevSlide() {
+            let prevSlide = currentSlide - 1;
+            if (prevSlide < 0) prevSlide = carouselSlides.length - 1;
+            showSlide(prevSlide);
+        }
+
+        function startCarousel() {
+            carouselInterval = setInterval(showNextSlide, 4000);
+        }
+
+        function pauseCarousel() {
+            clearInterval(carouselInterval);
+        }
+
+        // Toggle do calendário
+        function toggleCalendar(e) {
+            e.stopPropagation();
+            calendarContainer.classList.toggle('expanded');
+            calendarToggle.classList.toggle('fa-chevron-down');
+            calendarToggle.classList.toggle('fa-chevron-up');
+        }
+
+        // Fechar calendário ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!calendarContainer.contains(e.target) && !dateSelector.contains(e.target)) {
+                calendarContainer.classList.remove('expanded');
+                calendarToggle.classList.remove('fa-chevron-up');
+                calendarToggle.classList.add('fa-chevron-down');
+            }
+        });
+
+        // Renderizar calendário
+        async function renderCalendar() {
+            // Limpar calendário
+            while (calendarDays.children.length > 7) {
+                calendarDays.removeChild(calendarDays.lastChild);
+            }
+
+            // Atualizar mês atual
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            currentMonthElement.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+
+            // Primeiro e último dia do mês
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            // Dias do mês anterior e próximo
+            const startingDay = firstDay.getDay();
+            const prevMonthLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+            const totalDays = lastDay.getDate();
+            const endingDay = lastDay.getDay();
+            
+            // Data atual para comparação
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Adicionar dias do mês anterior
+            for (let i = 0; i < startingDay; i++) {
+                const dateElement = document.createElement('div');
+                dateElement.classList.add('calendar-date', 'disabled');
+                dateElement.textContent = prevMonthLastDay - startingDay + i + 1;
+                calendarDays.appendChild(dateElement);
+            }
+            
+            // Adicionar dias do mês atual
+            for (let i = 1; i <= totalDays; i++) {
+                const dateElement = document.createElement('div');
+                dateElement.classList.add('calendar-date');
+                dateElement.textContent = i;
+                
+                const fullDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+                
+                // Verificar se é hoje
+                if (fullDate.toDateString() === today.toDateString()) {
+                    dateElement.classList.add('today');
+                }
+                
+                // Verificar se é uma data passada
+                if (fullDate < today) {
+                    dateElement.classList.add('disabled');
+                } else {
+                    dateElement.addEventListener('click', () => selectDate(fullDate, dateElement));
+                    
+                    // Verificar se é a data selecionada
+                    if (selectedDate && 
+                        fullDate.getDate() === selectedDate.getDate() &&
+                        fullDate.getMonth() === selectedDate.getMonth() &&
+                        fullDate.getFullYear() === selectedDate.getFullYear()) {
+                        dateElement.classList.add('selected');
+                    }
+                }
+                
+                calendarDays.appendChild(dateElement);
+            }
+            
+            // Adicionar dias do próximo mês
+            for (let i = 1; i <= (6 - endingDay); i++) {
+                const dateElement = document.createElement('div');
+                dateElement.classList.add('calendar-date', 'disabled');
+                dateElement.textContent = i;
+                calendarDays.appendChild(dateElement);
+            }
+        }
+
+        // Selecionar data
+        async function selectDate(date, element) {
+            // Remover seleção anterior
+            document.querySelectorAll('.calendar-date.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Adicionar seleção atual
+            element.classList.add('selected');
+            selectedDate = date;
+            
+            // Atualizar display da data selecionada
+            datePlaceholder.style.display = 'none';
+            dateSelected.style.display = 'block';
+            dateSelected.textContent = date.toLocaleDateString('pt-BR');
+            
+            // Limpar erro de data
+            document.getElementById('date-error').style.display = 'none';
+            
+            // Fechar calendário após seleção
+            calendarContainer.classList.remove('expanded');
+            calendarToggle.classList.remove('fa-chevron-up');
+            calendarToggle.classList.add('fa-chevron-down');
+            
+            // Carregar horários ocupados e renderizar slots
+            await verificarHorariosOcupados(date);
+            renderTimeSlots();
+            updateWhatsAppPreview();
+            validateForm();
+        }
+
+        // Renderizar horários disponíveis
+        function renderTimeSlots() {
+            // Limpar horários
+            timeSlotsContainer.innerHTML = '';
+            
+            if (!selectedDate) return;
+            
+            const dataFormatada = selectedDate.toISOString().split('T')[0];
+            const horariosOcupados = agendamentosOcupados[dataFormatada] || [];
+            
+            // Horários disponíveis
+            const availableTimes = [
+                '08:00', '09:00', '10:00', '11:00', 
+                '14:00', '15:00', '16:00', '17:00'
+            ];
+            
+            // Adicionar horários
+            availableTimes.forEach(time => {
+                const timeElement = document.createElement('div');
+                timeElement.classList.add('time-slot');
+                
+                // Verificar se horário está ocupado
+                if (horariosOcupados.includes(time)) {
+                    timeElement.classList.add('occupied');
+                    timeElement.title = 'Horário já reservado';
+                } else {
+                    timeElement.addEventListener('click', () => selectTime(time, timeElement));
+                    
+                    if (selectedTime === time) {
+                        timeElement.classList.add('selected');
+                    }
+                }
+                
+                timeElement.textContent = time;
+                timeSlotsContainer.appendChild(timeElement);
+            });
+        }
+
+        // Selecionar horário
+        function selectTime(time, element) {
+            // Verificar se não está ocupado
+            if (element.classList.contains('occupied')) return;
+            
+            // Remover seleção anterior
+            document.querySelectorAll('.time-slot.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Adicionar seleção atual
+            element.classList.add('selected');
+            selectedTime = time;
+            
+            // Limpar erro de horário
+            document.getElementById('time-error').style.display = 'none';
+            
+            updateWhatsAppPreview();
+            validateForm();
+        }
+
+        // Validação de campos
+        function validateField(field) {
+            const errorElement = document.getElementById(`${field.id}-error`);
+            
+            if (field.hasAttribute('required') && !field.value.trim()) {
+                field.classList.add('error');
+                errorElement.style.display = 'block';
+                return false;
+            } else {
+                field.classList.remove('error');
+                errorElement.style.display = 'none';
+                
+                // Validação específica para telefone
+                if (field.id === 'telefone' && field.value.trim()) {
+                    const phoneRegex = /^\(\d{2}\) \d{5}-\d{4}$/;
+                    if (!phoneRegex.test(field.value)) {
+                        field.classList.add('error');
+                        errorElement.textContent = 'Formato: (00) 00000-0000';
+                        errorElement.style.display = 'block';
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+        }
+
+        // Validação geral do formulário
+        function validateForm() {
+            const nome = document.getElementById('nome').value.trim();
+            const telefone = document.getElementById('telefone').value.trim();
+            const servico = document.getElementById('servico').value;
+            
+            const isNomeValid = nome.length > 0;
+            const isTelefoneValid = telefone.length > 0 && /^\(\d{2}\) \d{5}-\d{4}$/.test(telefone);
+            const isServicoValid = servico.length > 0;
+            const isDateValid = selectedDate !== null;
+            const isTimeValid = selectedTime !== null;
+            
+            if (isNomeValid && isTelefoneValid && isServicoValid && isDateValid && isTimeValid) {
+                submitBtn.disabled = false;
+                return true;
+            } else {
+                submitBtn.disabled = true;
+                return false;
+            }
+        }
+
+        // Atualizar preview da mensagem do WhatsApp
+        function updateWhatsAppPreview() {
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const servico = document.getElementById('servico').value;
+            const observacoes = document.getElementById('observacoes').value;
+            
+            let previewHTML = '';
+            
+            if (nome || telefone || servico || selectedDate || selectedTime) {
+                previewHTML = `
+                    <p><strong>Olá, Helena Nail's Designer!</strong></p>
+                    <p>Gostaria de agendar um horário:</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        ${nome ? `<li><strong>Nome:</strong> ${nome}</li>` : ''}
+                        ${telefone ? `<li><strong>Telefone:</strong> ${telefone}</li>` : ''}
+                        ${servico ? `<li><strong>Serviço:</strong> ${servico}</li>` : ''}
+                        ${selectedDate ? `<li><strong>Data:</strong> ${selectedDate.toLocaleDateString('pt-BR')}</li>` : ''}
+                        ${selectedTime ? `<li><strong>Horário:</strong> ${selectedTime}</li>` : ''}
+                        ${observacoes ? `<li><strong>Observações:</strong> ${observacoes}</li>` : ''}
+                    </ul>
+                    <p style="margin-top: 10px;">Aguardo confirmação! 😊</p>
+                `;
+                
+                whatsappPreview.style.display = 'block';
+            } else {
+                whatsappPreview.style.display = 'none';
+            }
+            
+            previewContent.innerHTML = previewHTML;
+        }
+
+        // Manipular envio do formulário
+        async function handleAppointmentSubmit() {
+            // Validar todos os campos
+            const fields = ['nome', 'telefone', 'servico'];
+            let isValid = true;
+            
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!validateField(field)) {
+                    isValid = false;
+                }
+            });
+            
+            // Validar data e horário
+            if (!selectedDate) {
+                document.getElementById('date-error').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!selectedTime) {
+                document.getElementById('time-error').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                showNotification('Por favor, preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+            
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const servico = document.getElementById('servico').value;
+            const observacoes = document.getElementById('observacoes').value;
+            
+            // Mostrar indicador de carregamento
+            submitBtn.innerHTML = '<span class="loading"></span> Verificando disponibilidade...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Formatar dados
+                const dataFormatada = selectedDate.toISOString().split('T')[0];
+                const horaFormatada = selectedTime + ':00';
+                
+                // Criar agendamento no Supabase
+                await criarAgendamento({
+                    nome: nome,
+                    telefone: telefone,
+                    servico: servico,
+                    data_agendamento: dataFormatada,
+                    hora_agendamento: horaFormatada,
+                    observacoes: observacoes
+                });
+                
+                // Enviar para WhatsApp
+                sendToWhatsApp(nome, telefone, servico, selectedDate, selectedTime, observacoes);
+                
+                // Limpar formulário
+                agendamentoForm.reset();
+                selectedDate = null;
+                selectedTime = null;
+                
+                // Resetar display
+                datePlaceholder.style.display = 'block';
+                dateSelected.style.display = 'none';
+                
+                // Atualizar UI
+                renderCalendar();
+                renderTimeSlots();
+                updateWhatsAppPreview();
+                validateForm();
+                
+                // Restaurar botão
+                submitBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar Agendamento no WhatsApp';
+                
+                showNotification('Agendamento confirmado! Redirecionando para o WhatsApp...');
+                
+            } catch (error) {
+                console.error('Erro no agendamento:', error);
+                showNotification(error.message, 'error');
+                submitBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar Agendamento no WhatsApp';
+                submitBtn.disabled = false;
+                
+                // Recarregar horários ocupados em caso de conflito
+                if (selectedDate) {
+                    await verificarHorariosOcupados(selectedDate);
+                    renderTimeSlots();
+                }
+            }
+        }
+
+        // Mostrar notificação
+        function showNotification(message, type = 'success') {
+            notificationText.textContent = message;
+            
+            if (type === 'error') {
+                notification.style.background = '#e74c3c';
+                notification.classList.add('error');
+            } else {
+                notification.style.background = '#4CAF50';
+                notification.classList.remove('error');
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // Enviar para WhatsApp
+        function sendToWhatsApp(nome, telefone, servico, data, horario, observacoes) {
+            const formattedDate = data.toLocaleDateString('pt-BR');
+            
+            const message = `Olá, Helena Nail's Designer! 😊
+
+Gostaria de agendar um horário:
+
+*Nome:* ${nome}
+*Telefone:* ${telefone}
+*Serviço:* ${servico}
+*Data:* ${formattedDate}
+*Horário:* ${horario}
+${observacoes ? `*Observações:* ${observacoes}` : ''}
+
+Por favor, confirme a disponibilidade deste horário.
+
+Aguardo retorno! 💅`;
+
+            const url = `https://wa.me/5554997010289?text=${encodeURIComponent(message)}`;
+            
+            // Abrir em uma nova aba
+            window.open(url, '_blank');
+        }
+    </script>
 </body>
-
 </html>
